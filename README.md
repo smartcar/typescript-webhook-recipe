@@ -1,8 +1,40 @@
-# Welcome to your CDK TypeScript project
+# Typescript Smartcar Webhook solution template
+Walk through the interactive deployment after configuring your target AWS account target.
+Deployed infrastructure includes...
+ * API Gateway 
+ * 2 Lambdas
+ * SQS Queue
 
-This is a blank project for CDK development with TypeScript.
+# Design
+TODO
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+# Deployments
+
+## Interactive deploy
+
+TODO: python script in ./scripts/deploy
+
+## Deploy using Make
+1. Login
+```
+aws sso login
+```
+
+2. Build
+```
+make build
+```
+
+2. Test
+```
+make test
+```
+
+2. Deploy
+```
+make deploy
+```
+
 
 ## Useful commands
 
