@@ -2,7 +2,7 @@
   "name": "webhook_destination",
   "version": "0.1.0",
   "bin": {
-    "webhook_destination": "bin/webhook_destination.js"
+    "webhook_destination": "bin/webhook_destination.ts"
   },
   "scripts": {
     "build": "tsc",
