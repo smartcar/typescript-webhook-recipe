@@ -18,6 +18,9 @@ export class WebhookDestinationStack extends cdk.Stack {
         POWERTOOLS_LOG_LEVEL: "INFO",
         APPLICATION_MANAGEMENT_TOKEN: "135bbef6-74f3-4535-9746-e4d077c2666c"
       },
+      bundling: {
+        forceDockerBundling: false
+      },
       entry: join(__dirname, '..', 'src/lambdas/api', 'index.ts'),
       handler: 'index.handler',
     });
