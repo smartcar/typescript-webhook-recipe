@@ -12,7 +12,6 @@ export class WebhookDestinationStack extends cdk.Stack {
       runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(30),
-      architecture: cdk.aws_lambda.Architecture.ARM_64,
       environment: {
         POWERTOOLS_SERVICE_NAME: id,
         POWERTOOLS_LOG_LEVEL: "INFO",
