@@ -24,7 +24,7 @@ export class WebhookDestinationStack extends cdk.Stack {
 
     // Create a new SQS queue
     const queue = new sqs.Queue(this, 'WebhookQueue', {
-      queueName: 'test-webhook-handler-queue',
+      queueName: 'czh-test-webhook-handler-queue',
       visibilityTimeout: cdk.Duration.seconds(30),
     });
 
