@@ -1,5 +1,7 @@
 
-.PHONY: build lint test deploy
+.PHONY: build lint test deploy destroy
+
+appName ?= default-WebhookDestinationStack
 
 build:
 	npm install
@@ -12,4 +14,7 @@ lint:
 deploy:
 	npm install
 	npm run build
-	npx cdk deploy czh-WebhookDestinationStack --require-approval never
+	npx cdk deploy $(appName) --require-approval never -c appName=$(appName)
+
+destroy:
+	npx cdk destroy $(appName) -c appName=$(appName)
