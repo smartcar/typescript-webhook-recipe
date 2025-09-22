@@ -3,7 +3,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import { join } from 'path';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class WebhookDestinationStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -21,6 +21,18 @@ export class WebhookDestinationStack extends cdk.Stack {
       entry: join(__dirname, '..', 'src/lambdas/api', 'index.ts'),
       handler: 'index.handler',
     });
+
+    // Create a new SQS queue
+    const queue = new sqs.Queue(this, 'WebhookQueue', {
+      queueName: 'czh-test-webhook-handler-queue',
+      visibilityTimeout: cdk.Duration.seconds(30),
+    });
+
+    
+    queue.grantSendMessages(webhookFunction);
+
+    webhookFunction.addEnvironment('QUEUE_URL', queue.queueUrl);
+    
 
     // Create a REST API with a catch-all ANY method on any resource
     const api = new apigateway.RestApi(this, 'WebhookEndpoint', {

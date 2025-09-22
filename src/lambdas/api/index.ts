@@ -1,5 +1,8 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+
+const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
 
 import * as smartcar from 'smartcar';
 
@@ -59,6 +62,18 @@ export const handler = async (
         }
     }
     console.warn('WEBHOOK EVENT::', event.body);
+    const params = {
+        QueueUrl: process.env.QUEUE_URL!,
+        MessageBody: event.body,
+    }
+    try {
+        const command = new SendMessageCommand(params);
+        const response = await sqsClient.send(command);
+        logger.info('SQS send message response', { response });
+    } catch (err) {
+        logger.error('Error sending message to SQS', { err });
+    }
+    
     return {
         statusCode: 200,
         body: JSON.stringify({
