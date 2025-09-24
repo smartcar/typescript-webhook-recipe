@@ -32,7 +32,7 @@ make test
 
 2. Deploy
 ```
-make deploy appName=<your-app-name>
+make deploy appName=<your-app-name> amt=<your-application-management-token>
 ```
 
 

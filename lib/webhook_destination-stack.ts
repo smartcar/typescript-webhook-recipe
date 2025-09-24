@@ -8,6 +8,13 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 export class WebhookDestinationStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+    
+    // Create a new SQS queue
+    const queue = new sqs.Queue(this, 'WebhookQueue', {
+      queueName: `${id}-handler-queue`,
+      visibilityTimeout: cdk.Duration.seconds(30),
+    });
+    
     const webhookFunction = new lambdaNodejs.NodejsFunction(this, 'WebhookHandler', {
       runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
       memorySize: 256,
@@ -16,22 +23,14 @@ export class WebhookDestinationStack extends cdk.Stack {
       environment: {
         POWERTOOLS_SERVICE_NAME: id,
         POWERTOOLS_LOG_LEVEL: "INFO",
-        APPLICATION_MANAGEMENT_TOKEN: "135bbef6-74f3-4535-9746-e4d077c2666c"
+        APPLICATION_MANAGEMENT_TOKEN: scope.node.tryGetContext('amt'),
+        QUEUE_URL: queue.queueUrl,
       },
       entry: join(__dirname, '..', 'src/lambdas/api', 'index.ts'),
       handler: 'index.handler',
     });
 
-    // Create a new SQS queue
-    const queue = new sqs.Queue(this, 'WebhookQueue', {
-      queueName: `${id}-handler-queue`,
-      visibilityTimeout: cdk.Duration.seconds(30),
-    });
-
-    
     queue.grantSendMessages(webhookFunction);
-
-    webhookFunction.addEnvironment('QUEUE_URL', queue.queueUrl);
     
 
     // Create a REST API with a catch-all ANY method on any resource

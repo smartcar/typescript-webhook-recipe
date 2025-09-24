@@ -2,7 +2,7 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
-const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+const sqsClient = new SQSClient();;
 
 import * as smartcar from 'smartcar';
 
@@ -61,6 +61,26 @@ export const handler = async (
             };
         }
     }
+    
+    // Verify the webhook payload
+    const isValid = smartcar.verifyPayload(
+        applicationManagementToken,
+        event.headers["SC-Signature"] || '',
+        postRequest
+    );
+    if (!isValid) {
+        logger.error('Invalid webhook signature', { headers: event.headers });
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'Invalid webhook signature',
+            }),
+        };
+    }
+
+    console.log('Valid webhook received');
+
+  
     console.warn('WEBHOOK EVENT::', event.body);
     const params = {
         QueueUrl: process.env.QUEUE_URL!,
