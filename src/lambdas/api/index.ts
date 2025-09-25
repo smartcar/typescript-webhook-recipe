@@ -1,5 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyResult, SQSEvent, Context, SQSHandler, SQSRecord } from 'aws-lambda';
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const sqsClient = new SQSClient();;
@@ -100,4 +100,14 @@ export const handler = async (
             message: 'Error signal detected, but no action taken',
         }),
     };
+};
+
+
+export const processor: SQSHandler = async (
+  event: SQSEvent,
+  context: Context
+): Promise<void> => {
+  for (const message of event.Records) {
+    console.log('Processing message:', message.body);
+  }
 };
