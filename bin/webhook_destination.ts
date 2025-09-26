@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { WebhookDestinationStack } from '../lib/webhook_destination-stack';
+import { WebhookDestinationStack } from '../lib/webhook_destination-stack.js';
 
 
 const app = new cdk.App();

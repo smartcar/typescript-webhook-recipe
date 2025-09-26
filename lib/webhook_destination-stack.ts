@@ -6,6 +6,14 @@ import { Construct } from 'constructs';
 import { join } from 'path';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 
+// ES module imports
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
 export class WebhookDestinationStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
