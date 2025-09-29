@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as lambdaSources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { join } from 'path';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -37,6 +38,7 @@ export class WebhookDestinationStack extends cdk.Stack {
       },
       entry: join(__dirname, '..', 'src/lambdas/api', 'receiver.ts'),
       handler: 'handler',
+      logRetention: logs.RetentionDays.TWO_MONTHS,
     });
 
     queue.grantSendMessages(webhookFunction);
@@ -54,6 +56,7 @@ export class WebhookDestinationStack extends cdk.Stack {
       },
       entry: join(__dirname, '..', 'src/lambdas/api', 'processor.ts'),
       handler: 'processor',
+      logRetention: logs.RetentionDays.TWO_MONTHS,
     });
 
     // Attach SQS as an event source to the processor Lambda

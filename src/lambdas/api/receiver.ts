@@ -1,20 +1,12 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { parseEnvelope, verifySignature, hashChallenge } from '@smartcar/webhooks';
+import type { WebhookDataPayload } from '@smartcar/webhooks';
 
 const sqsClient = new SQSClient();;
 
-import * as smartcar from 'smartcar';
-
 const logger = new Logger();
-
-type PostRequestType = {
-    version: string
-    webhookId: string,
-    eventName: string
-    eventType: string,
-    data: { challenge: string }
-}
 
 /**
  * AWS Lambda handler for API Gateway requests. This handler should only 
@@ -36,7 +28,7 @@ type PostRequestType = {
 export const handler = async (
     event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> => {
-    const applicationManagementToken = process.env.APPLICATION_MANAGEMENT_TOKEN;
+    const applicationManagementToken: string  = process.env.APPLICATION_MANAGEMENT_TOKEN!;
     if (!event || !event.body) {
         return {
             statusCode: 400,
@@ -48,15 +40,17 @@ export const handler = async (
     console.log('Received HEADERS', event.headers);
     console.log('Received PATH PARAMS:', event.pathParameters);
     console.log('Received BODY->', event.body);
-    const postRequest: PostRequestType = JSON.parse(event.body)
+    const eventPayload: WebhookDataPayload = parseEnvelope(event.body)
 
     //If it's a challenge call, meet the challenge by returning the hmac of the challenge
-    if (postRequest.eventType === 'VERIFY') {
+    if (eventPayload.eventType === 'VERIFY') {
         try {
 
-            const hmac = smartcar.hashChallenge(
+            const challenge = eventPayload.data.challenge;
+
+            const hmac = hashChallenge(
                 applicationManagementToken,
-                postRequest.data.challenge
+                challenge || '',
             );
             return {
                 statusCode: 200,
@@ -80,10 +74,10 @@ export const handler = async (
     }
     
     // Verify the webhook payload was sent for this application from Smartcar
-    const isValid = smartcar.verifyPayload(
+    const isValid = verifySignature(
         applicationManagementToken,
+        JSON.stringify(eventPayload),
         event.headers["SC-Signature"] || '',
-        postRequest
     );
     if (!isValid) {
         logger.error('Invalid webhook signature', { headers: event.headers });
@@ -94,15 +88,13 @@ export const handler = async (
             }),
         };
     }
-
     logger.info('Valid webhook payload received');
-
   
     // Send the message to SQS for application processing
     try {
         const params = {
             QueueUrl: process.env.QUEUE_URL!,
-            MessageBody: event.body,
+            MessageBody: event.body
         }
         const command = new SendMessageCommand(params);
         const response = await sqsClient.send(command);
@@ -119,5 +111,4 @@ export const handler = async (
         }),
     };
 };
-
 

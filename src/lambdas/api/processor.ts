@@ -1,6 +1,8 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { SQSEvent, Context, SQSHandler, SQSRecord } from 'aws-lambda';
-import { getSignalByCode, type TractionBatteryStateOfCharge, type Signals } from "@smartcar/signals";
+import { SQSEvent, Context, SQSHandler } from 'aws-lambda';
+import { getSignalByCode, type TractionBatteryStateOfCharge, Signals } from "@smartcar/signals";
+import { parseEnvelope } from '@smartcar/webhooks';
+import type { WebhookDataPayload } from '@smartcar/webhooks';
 
 const logger = new Logger();
 /**
@@ -22,16 +24,25 @@ export const processor: SQSHandler = async (
   context: Context
 ): Promise<void> => {
   for (const message of event.Records) {
+    
     console.log('Processing message:', message.body);
+    
     try {
-      const eventBody = JSON.parse(message.body)
-      const { signals } = eventBody.data;
-      const stateOfChargeSignal: TractionBatteryStateOfCharge | undefined = getSignalByCode<TractionBatteryStateOfCharge>(signals, 'tractionbattery-stateofcharge');
-      if (stateOfChargeSignal) {
-        console.log('State of Charge Signal', stateOfChargeSignal.body);
-        if (stateOfChargeSignal.body.value < 50) {
-          console.log('Battery below 50% - take action!');
+      const eventBody: WebhookDataPayload = parseEnvelope(message.body);
+      const signals: Signals  = eventBody.data.signals as Signals;
+      const { errors } = eventBody.data;
+      
+      if (signals && signals.length > 0) {
+        const stateOfChargeSignal: TractionBatteryStateOfCharge | undefined = getSignalByCode<TractionBatteryStateOfCharge>(signals, 'tractionbattery-stateofcharge');
+        if (stateOfChargeSignal) {
+          console.log('State of Charge Signal', stateOfChargeSignal.body);
+          if (stateOfChargeSignal.body.value < 50) {
+            console.log('Battery below 50% - take action!');
+          }
         }
+      }
+      if (errors && errors.length > 0) {
+        console.warn('Errors in webhook payload:', errors);
       }
     } catch (err) {
       logger.error(`Error retrieving state of charge signal: ${err}`);
