@@ -1,4 +1,4 @@
-# Typescript Smartcar Webhook solution template
+# Typescript Smartcar Webhook Receiver
 Walk through the interactive deployment after configuring your target AWS account target.
 Deployed infrastructure includes...
  * API Gateway 
