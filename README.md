@@ -9,8 +9,8 @@ Deployed infrastructure includes...
 This application is designed to receive Smartcar webhook events and process them asynchronously. 
 
 The API Gateway receives incoming webhook events and forwards them to the first Lambda function (receiver.ts) that:
-1. Validates the webhook signature challenge
-2. Validates the webhook event signature
+1. Validates the webhook URI by responding to the [initial verification challenge](https://smartcar.com/docs/integrations/webhooks/callback-verification)
+2. Validates the webhook event payload using the [Smartcar signature header](https://smartcar.com/docs/integrations/webhooks/payload-verification)
 3. Forwards valid webhook events to an SQS queue
 4. Returns a 200 OK response to Smartcar
 
