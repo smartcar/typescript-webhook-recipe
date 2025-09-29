@@ -35,14 +35,14 @@ export class WebhookDestinationStack extends cdk.Stack {
         APPLICATION_MANAGEMENT_TOKEN: scope.node.tryGetContext('amt'),
         QUEUE_URL: queue.queueUrl,
       },
-      entry: join(__dirname, '..', 'src/lambdas/api', 'index.ts'),
-      handler: 'index.handler',
+      entry: join(__dirname, '..', 'src/lambdas/api', 'receiver.ts'),
+      handler: 'handler',
     });
 
     queue.grantSendMessages(webhookFunction);
 
 
-    // NEW: Lambda that processes messages from SQS
+    // Lambda that processes messages from SQS
     const processorFunction = new lambdaNodejs.NodejsFunction(this, 'QueueProcessor', {
       runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
       memorySize: 256,
@@ -52,8 +52,8 @@ export class WebhookDestinationStack extends cdk.Stack {
         POWERTOOLS_SERVICE_NAME: `${id}-processor`,
         POWERTOOLS_LOG_LEVEL: "INFO",
       },
-      entry: join(__dirname, '..', 'src/lambdas/api', 'index.ts'),
-      handler: 'index.processor',
+      entry: join(__dirname, '..', 'src/lambdas/api', 'processor.ts'),
+      handler: 'processor',
     });
 
     // Attach SQS as an event source to the processor Lambda
