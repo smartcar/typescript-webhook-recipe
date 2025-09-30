@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as lambdaSources from 'aws-cdk-lib/aws-lambda-event-sources';
-import * as logs from 'aws-cdk-lib/aws-logs';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { join } from 'path';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -24,8 +24,9 @@ export class WebhookDestinationStack extends cdk.Stack {
       queueName: `${id}-handler-queue`,
       visibilityTimeout: cdk.Duration.seconds(30),
     });
+
     
-    const webhookFunction = new lambdaNodejs.NodejsFunction(this, 'WebhookHandler', {
+    const webhookFunction = new lambdaNodejs.NodejsFunction(this, 'SCWebhookReceiver', {
       runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(30),
@@ -33,19 +34,18 @@ export class WebhookDestinationStack extends cdk.Stack {
       environment: {
         POWERTOOLS_SERVICE_NAME: id,
         POWERTOOLS_LOG_LEVEL: "INFO",
-        APPLICATION_MANAGEMENT_TOKEN: scope.node.tryGetContext('amt'),
+        APP_TOKEN_SECRET_NAME: `${id}-secret`,
         QUEUE_URL: queue.queueUrl,
       },
       entry: join(__dirname, '..', 'src/lambdas/api', 'receiver.ts'),
       handler: 'handler',
-      logRetention: logs.RetentionDays.TWO_MONTHS,
     });
 
     queue.grantSendMessages(webhookFunction);
 
 
     // Lambda that processes messages from SQS
-    const processorFunction = new lambdaNodejs.NodejsFunction(this, 'QueueProcessor', {
+    const processorFunction = new lambdaNodejs.NodejsFunction(this, 'SCQueueProcessor', {
       runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(30),
@@ -56,17 +56,24 @@ export class WebhookDestinationStack extends cdk.Stack {
       },
       entry: join(__dirname, '..', 'src/lambdas/api', 'processor.ts'),
       handler: 'processor',
-      logRetention: logs.RetentionDays.TWO_MONTHS,
     });
-
+    
     // Attach SQS as an event source to the processor Lambda
     processorFunction.addEventSource(
       new lambdaSources.SqsEventSource(queue, {
         batchSize: 10, // process up to 10 messages at once
       })
     );
-    
 
+    // AMT secret
+    const appTokenSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      id,
+      `${id}-secret`
+    );
+
+    appTokenSecret.grantRead(webhookFunction);
+    
     // Create a REST API with a catch-all ANY method on any resource
     const api = new apigateway.RestApi(this, 'WebhookEndpoint', {
       deployOptions: {
@@ -84,3 +91,4 @@ export class WebhookDestinationStack extends cdk.Stack {
     });
   }
 }
+

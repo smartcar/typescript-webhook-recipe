@@ -8,13 +8,13 @@ Deployed infrastructure includes...
 # Design
 This application is designed to receive Smartcar webhook events and process them asynchronously. 
 
-The API Gateway receives incoming webhook events and forwards them to the first Lambda function (receiver.ts) that:
+The API Gateway receives incoming webhook events and forwards them to the first Lambda function (`receiver.ts`) that:
 1. Validates the webhook URI by responding to the [initial verification challenge](https://smartcar.com/docs/integrations/webhooks/callback-verification)
 2. Validates the webhook event payload using the [Smartcar signature header](https://smartcar.com/docs/integrations/webhooks/payload-verification)
 3. Forwards valid webhook events to an SQS queue
 4. Returns a 200 OK response to Smartcar
 
-The second Lambda function (processor.ts) is triggered by messages in the SQS queue and processes the webhook events.
+The second Lambda function (`processor.ts`) is triggered by messages in the SQS queue and processes the webhook events.
 This function can be customized to perform any processing required for your application.
 
 # Requirements
@@ -44,6 +44,16 @@ sudo apt install -y build-essential
 xcode-select --install
 ```
 
+# First Time Setup
+1. Login to AWS SSO
+```
+aws sso login
+```
+
+2. Create a new AWS secret containing your Smartcar Application Management Token
+```
+make create-secret appName=<your-app-name> amt=<your-application-management-token>
+```
 
 # Deployments
 
@@ -52,7 +62,7 @@ xcode-select --install
 TODO: python script in ./scripts/deploy
 
 ## Deploy using Make
-1. Login
+1. Login to AWS SSO
 ```
 aws sso login
 ```
@@ -69,8 +79,9 @@ make test
 
 2. Deploy
 ```
-make deploy appName=<your-app-name> amt=<your-application-management-token>
+make deploy appName=<your-app-name>
 ```
+> **__NOTE:__** Use the same `<your-app-name>` as used when creating the secret
 
 ## Destroy using Make
 ```
@@ -80,6 +91,7 @@ make destroy appName=<your-app-name>
 # Integrating with Smartcar
 1. In AWS console, navigate to Lambda -> Applications -> YourAppName
 2. On the Overview page, copy the URL for the API Endpoint
+> **__NOTE:__** Alternatively, you can copy the URL from output of the `make deploy` command under `<your-app-name>.ApiEndpointUrl`
 3. In the [Smartcar Developer portal](https://dashboard.smartcar.com/), use this URL as the Vehicle data callback URI for your integration
 4. Navigate to CloudWatch -> Log groups and find the log group for the `/aws/lambda/YourAppName` lambda to view incoming webhook events
 
