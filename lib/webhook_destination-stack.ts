@@ -18,6 +18,8 @@ const __dirname = path.dirname(__filename);
 export class WebhookDestinationStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    cdk.Tags.of(this).add('project', "SmartcarWebhook");
     
     // Create a new SQS queue
     const queue = new sqs.Queue(this, 'WebhookQueue', {
