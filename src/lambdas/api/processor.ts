@@ -25,7 +25,7 @@ export const processor: SQSHandler = async (
 ): Promise<void> => {
   for (const message of event.Records) {
     
-    console.log('Processing message:', message.body);
+    logger.info('Processing message', { messageId: message.messageId, body: JSON.parse(message.body), awsRequestId: context.awsRequestId });
     
     try {
       const eventBody: WebhookDataPayload = parseEnvelope(message.body);
@@ -35,17 +35,17 @@ export const processor: SQSHandler = async (
       if (signals && signals.length > 0) {
         const stateOfChargeSignal: TractionBatteryStateOfCharge | undefined = getSignalByCode<TractionBatteryStateOfCharge>(signals, 'tractionbattery-stateofcharge');
         if (stateOfChargeSignal) {
-          console.log('State of Charge Signal', stateOfChargeSignal.body);
+          logger.info('State of Charge Signal', stateOfChargeSignal.body);
           if (stateOfChargeSignal.body.value < 50) {
-            console.log('Battery below 50% - take action!');
+            logger.info('Battery below 50% - get charged!');
           }
         }
       }
       if (errors && errors.length > 0) {
-        console.warn('Errors in webhook payload:', errors);
+        logger.warn('Errors in webhook payload', { errors } );
       }
     } catch (err) {
-      logger.error(`Error retrieving state of charge signal: ${err}`);
+      logger.error('Error retrieving state of charge signal', { error: err } );
     }
   }
 };

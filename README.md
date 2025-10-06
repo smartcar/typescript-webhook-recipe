@@ -45,27 +45,56 @@ xcode-select --install
 ```
 
 # First Time Setup
+
+AWS CDK requires [bootstrapping](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html) your AWS account to create the initial resources needed to deploy CDK apps.
+This only needs to be done once per account/region combination, and the following [permissions](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html#bootstrapping-env-permissions) are required for the account that does the provisioning:
+
+```json
+{
+    "Version": "2012-10-17",		 	 	 
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:*",
+                "ecr:*",
+                "ssm:*",
+                "s3:*",
+                "iam:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 1. Login to AWS SSO
 ```
 aws sso login
 ```
 
-2. Create a new AWS secret containing your Smartcar Application Management Token
+> **__NOTE:__** This command uses your default AWS profile. You may need to specify a profile if no default is configured. See [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) for more info.
+
+
+2. Bootstrap your AWS account
+```
+cd typescript-webhook-recipe
+cdk bootstrap <aws://aws-account-number/aws-region>
+```
+
+3. Create a new AWS secret containing your Smartcar Application Management Token
 ```
 make create-secret appName=<your-app-name> amt=<your-application-management-token>
 ```
 
 # Deployments
 
-## Interactive deploy
-
-TODO: python script in ./scripts/deploy
-
 ## Deploy using Make
 1. Login to AWS SSO
 ```
 aws sso login
 ```
+
 
 2. Build
 ```

@@ -37,8 +37,7 @@ export const handler = async (
             }),
         };
     }
-    console.log('Received HEADERS', event.headers);
-    console.log('Received BODY->', event.body);
+    logger.info('Received webhook', { headers: event.headers, body: JSON.parse(event.body) });
     const eventPayload: WebhookDataPayload = parseEnvelope(event.body)
 
     //If it's a challenge call, meet the challenge by returning the hmac of the challenge
@@ -52,7 +51,7 @@ export const handler = async (
                 applicationManagementToken || '',
                 challenge || '',
             );
-            console.log('Responding to challenge with hmac', { hmac }); 
+            logger.info('Responding to challenge with hmac', { hmac });
             return {
                 statusCode: 200,
                 body: JSON.stringify({
@@ -60,7 +59,7 @@ export const handler = async (
                 }),
             };
         } catch (err) {
-            console.log(err);
+            logger.error('Error computing hmac for challenge', { error: err });
             return {
                 statusCode: 500,
                 headers: {
@@ -93,7 +92,7 @@ export const handler = async (
           };
       }
     } catch (err) {
-      console.log(err);
+      logger.error('Error validating webhook signature', { error: err });
       return {
           statusCode: 500,
           headers: {
@@ -116,9 +115,9 @@ export const handler = async (
         }
         const command = new SendMessageCommand(params);
         const response = await sqsClient.send(command);
-        console.log('SQS send message response', { response });
+        logger.info('Message sent to SQS', { response });
     } catch (err) {
-        console.log('Error sending message to SQS', { err });
+        logger.error('Error sending message to SQS', { error: err });
     }
     
     // Always return 200 to Smartcar to avoid retries
