@@ -77,10 +77,7 @@ aws sso login
 
 
 2. Bootstrap your AWS account
-```
-cd typescript-webhook-recipe
-cdk bootstrap <aws://aws-account-number/aws-region>
-```
+Follow the steps for CDK [bootstrapping](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html).
 
 3. Create a new AWS secret containing your Smartcar Application Management Token
 ```
