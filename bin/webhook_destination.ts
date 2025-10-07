@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { WebhookDestinationStack } from '../lib/webhook_destination-stack';
+import { WebhookDestinationStack } from '../lib/webhook_destination-stack.js';
+
 
 const app = new cdk.App();
-new WebhookDestinationStack(app, 'czh-WebhookDestinationStack', {
+
+const appName = app.node.tryGetContext('appName') || 'default-WebhookDestinationStack';
+
+new WebhookDestinationStack(app, appName, {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
