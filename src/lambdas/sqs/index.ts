@@ -1,8 +1,8 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { SQSEvent, Context, SQSHandler } from 'aws-lambda';
-import { getSignalByCode, type TractionBatteryStateOfCharge, Signals } from "@smartcar/signals";
-import { parseEnvelope } from '@smartcar/webhooks';
+import { getSignalByCode, Signals, type TractionBatteryStateOfCharge } from "@smartcar/signals";
 import type { WebhookDataPayload } from '@smartcar/webhooks';
+import { parseEnvelope } from '@smartcar/webhooks';
+import { Context, SQSEvent, SQSHandler } from 'aws-lambda';
 
 const logger = new Logger();
 /**
@@ -11,27 +11,23 @@ const logger = new Logger();
  *
  * @param event - The SQS event containing one or more messages from the queue.
  * @param context - The AWS Lambda context object providing runtime information.
- * @returns A promise that resolves when all messages have been processed.
+ * @returns Batch item failures used to retry failed messages.
  *
- * @example
- * // Example of iterating through messages
- * for (const record of event.Records) {
- *   console.log("Message body:", record.body);
- * }
  */
 export const processor: SQSHandler = async (
   event: SQSEvent,
   context: Context
-): Promise<void> => {
-  for (const message of event.Records) {
-    
-    logger.info('Processing message', { messageId: message.messageId, body: JSON.parse(message.body), awsRequestId: context.awsRequestId });
-    
+) => {
+  const batchItemFailures: { itemIdentifier: string }[] = [];
+
+  for (const record of event.Records) {
     try {
-      const eventBody: WebhookDataPayload = parseEnvelope(message.body);
-      const signals: Signals  = eventBody.data.signals as Signals;
+      logger.debug('Processing message', { messageId: record.messageId, body: JSON.parse(record.body), awsRequestId: context.awsRequestId });
+
+      const eventBody: WebhookDataPayload = parseEnvelope(record.body);
+      const signals: Signals = eventBody.data.signals as Signals;
       const { errors } = eventBody.data;
-      
+
       if (signals && signals.length > 0) {
         const stateOfChargeSignal: TractionBatteryStateOfCharge | undefined = getSignalByCode<TractionBatteryStateOfCharge>(signals, 'tractionbattery-stateofcharge');
         if (stateOfChargeSignal) {
@@ -42,10 +38,14 @@ export const processor: SQSHandler = async (
         }
       }
       if (errors && errors.length > 0) {
-        logger.warn('Errors in webhook payload', { errors } );
+        logger.warn('Errors in webhook payload', { errors });
       }
     } catch (err) {
-      logger.error('Error retrieving state of charge signal', { error: err } );
+      logger.error('Error during processing', { error: err, record });
+      batchItemFailures.push({ itemIdentifier: record.messageId });
     }
   }
+
+  // For SQS partial batch response, return failed items
+  return { batchItemFailures };
 };

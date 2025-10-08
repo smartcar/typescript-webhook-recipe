@@ -1,8 +1,8 @@
 {
-  "name": "webhook_destination",
+  "name": "webhook-receiver",
   "version": "0.1.0",
   "bin": {
-    "webhook_destination": "bin/webhook_destination.ts"
+    "webhook-receiver": "bin/webhook-receiver.ts"
   },
   "type": "module",
   "scripts": {

@@ -1,9 +1,9 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
-import { parseEnvelope, verifySignature, hashChallenge } from '@smartcar/webhooks';
 import type { WebhookDataPayload } from '@smartcar/webhooks';
+import { hashChallenge, parseEnvelope, verifySignature } from '@smartcar/webhooks';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const sqsClient = new SQSClient();;
 
@@ -26,7 +26,7 @@ const logger = new Logger();
  *   body: JSON.stringify({ message: "All good" }),
  * };
  */
-export const handler = async (
+export const receiver = async (
     event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> => {
     if (!event || !event.body) {
@@ -44,7 +44,7 @@ export const handler = async (
     if (eventPayload.eventType === 'VERIFY') {
         try {
 
-            const applicationManagementToken: string | undefined  = await getSecret(process.env.APP_TOKEN_SECRET_NAME!);
+            const applicationManagementToken: string | undefined = await getSecret(process.env.APP_TOKEN_SECRET_NAME!);
             const challenge = eventPayload.data.challenge;
 
             const hmac = hashChallenge(
@@ -74,39 +74,39 @@ export const handler = async (
     }
 
     try {
-      const applicationManagementToken: string | undefined  = await getSecret(process.env.APP_TOKEN_SECRET_NAME!);
-    
-      // Verify the webhook payload was sent for this application from Smartcar
-      const isValid = verifySignature(
-          applicationManagementToken || '',
-          JSON.stringify(eventPayload),
-          event.headers["SC-Signature"] || '',
-      );
-      if (!isValid) {
-          logger.error('Invalid webhook signature', { headers: event.headers });
-          return {
-              statusCode: 400,
-              body: JSON.stringify({
-                  message: 'Invalid webhook signature',
-              }),
-          };
-      }
+        const applicationManagementToken: string | undefined = await getSecret(process.env.APP_TOKEN_SECRET_NAME!);
+
+        // Verify the webhook payload was sent for this application from Smartcar
+        const isValid = verifySignature(
+            applicationManagementToken || '',
+            JSON.stringify(eventPayload),
+            event.headers["SC-Signature"] || '',
+        );
+        if (!isValid) {
+            logger.error('Invalid webhook signature', { headers: event.headers });
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: 'Invalid webhook signature',
+                }),
+            };
+        }
     } catch (err) {
-      logger.error('Error validating webhook signature', { error: err });
-      return {
-          statusCode: 500,
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-              message: 'Unable to validate webhook signature',
-              error: `${err}`,
-          }),
-      };
+        logger.error('Error validating webhook signature', { error: err });
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: 'Unable to validate webhook signature',
+                error: `${err}`,
+            }),
+        };
     }
-  
+
     logger.info('Valid webhook payload received');
-  
+
     // Send the message to SQS for application processing
     try {
         const params = {
@@ -119,7 +119,7 @@ export const handler = async (
     } catch (err) {
         logger.error('Error sending message to SQS', { error: err });
     }
-    
+
     // Always return 200 to Smartcar to avoid retries
     return {
         statusCode: 200,

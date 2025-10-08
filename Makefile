@@ -24,7 +24,7 @@ build:
 	npm ci
 	npm run build
 test:
-	echo "TODO: Implement unit tests"
+	npm run test
 lint:
 	npm run lint
 
