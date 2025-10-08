@@ -6,7 +6,7 @@ This application is designed to receive Smartcar webhook events and process them
 ![Design Diagram](docs/Design.png)
 The API Gateway receives incoming webhook events and forwards them the [Receiver](src/lambdas/api/index.ts) lambda.
 
-The **Reciever** lambda..
+The **Reciever** lambda...
 1. Validates the webhook URI by responding to the [initial verification challenge](https://smartcar.com/docs/integrations/webhooks/callback-verification)
 2. Validates the webhook event payload using the [Smartcar signature header](https://smartcar.com/docs/integrations/webhooks/payload-verification)
 3. Forwards valid webhook events to an SQS queue

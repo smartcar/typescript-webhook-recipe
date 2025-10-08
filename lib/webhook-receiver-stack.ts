@@ -61,7 +61,7 @@ export class WebhookReceiverStack extends cdk.Stack {
     // This lambda should should complete processing within 10 seconds.
     // It will use the APP_TOKEN_SECRET_NAME secret to answer challenges and verify signatures.
     // It will enqueue valid webhook messages to SQS for further processing.
-    const receiverLambdaFunction = new lambdaNodejs.NodejsFunction(this, 'Receiver-', {
+    const receiverLambdaFunction = new lambdaNodejs.NodejsFunction(this, 'Receiver', {
       runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(10),
