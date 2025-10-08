@@ -20,7 +20,7 @@ The **Processor** lambda...
 2. Retries failed messages 3 times. Upon failure the message will go to the Dead Letter Queue
 3. Contains sample code that makes use of the Smartcar SDK. Remember to configure your Webhook to include the signals your code needs.
 
-## Seup
+## Setup
 ### Code
 1. NPM
 1. NodeJS v22
