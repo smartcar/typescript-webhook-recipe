@@ -12,24 +12,67 @@ The **Reciever** lambda..
 3. Forwards valid webhook events to an SQS queue
 4. Returns a 200 OK response to Smartcar
 
-The [Processor](src/lambdas/sqs/index.ts) Lambda function handles messages in the SQS queue.
-This function can be customized to perform any processing required for **your** application.
+The SQS queue triggers the [Processor](src/lambdas/sqs/index.ts) Lambda function. This function can be customized to perform any processing required for **your** application.
 
-## Requirements
+The **Processor** lambda...
+
+1. Works in batches of 10. Partial batch failure is supported allowing individual records in a batch to fail for retry.
+2. Retries failed messages 3 times. Upon failure the message will go to the Dead Letter Queue
+3. Contains sample code that makes use of the Smartcar SDK. Remember to configure your Webhook to include the signals your code needs.
+
+## Seup
+### Code
+1. NPM
+1. NodeJS v22
+1. Typescript
+3. NPM
 ### AWS
-* An AWS account - [sign up](https://signin.aws.amazon.com/signup?request_type=register)
-* AWS CLI v2 configured with SSO - [instructions](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* AWS CDK v2 - [instructions](https://docs.aws.amazon.com/cdk/v2/guide/getting-started.html)
-* CDK Bootstrap activities - [bootstrapping](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html)
-### Node/TypeScript
-* Node.js 18+ 
-* npm
-* TypeScript
+1. [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+1. [CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/prerequisites.html)
+1. [CDK Bootstap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html)
+### AWS Account Profile/Auth
 
-We recommend using [fnm](https://github.com/Schniz/fnm?tab=readme-ov-file#installation) to manage your Node versions.
+To deploy and manage resources, you need to authenticate with AWS. There are two common methods:
 
-### Other
-* GNU Make
+#### a. AWS SSO (Recommended)
+AWS Single Sign-On (SSO) allows you to securely log in and manage multiple AWS accounts.  
+- [Set up AWS SSO](https://docs.aws.amazon.com/singlesignon/latest/userguide/getting-started.html)
+- [Configure AWS CLI for SSO](https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile.html)
+
+After setup, run:
+```bash
+aws sso login
+```
+This authenticates your CLI session using your SSO credentials.
+
+#### b. Environment Variables (Access Keys)
+You can also authenticate using AWS Access Key ID and Secret Access Key.  
+- [Configure AWS credentials using environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+
+Set the following environment variables:
+```bash
+export AWS_ACCESS_KEY_ID=<your-access-key-id>
+export AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
+export AWS_DEFAULT_REGION=<your-region>
+```
+
+#### Setting the Default AWS Profile
+To set your target AWS account as the default profile, update `~/.aws/config`:
+```ini
+[default]
+sso_account_id=<your-target-account>
+sso_role_name=AdministratorAccess
+sso_start_url=<your-sso-start-url>
+sso_region=<your-region>
+region = <your-region>
+output = json
+```
+
+For more details, see [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
+ 
+> **__NOTE:__** You must authenticate with a role that has sufficient permissions to assume CDK execution roles for deployment. Bootstrap processes for CDK will also require eleveated permissions. Learn more about permissions [here](https://aws.amazon.com/blogs/devops/secure-cdk-deployments-with-iam-permission-boundaries/)
+### Tools
+1. GNU Make
 
 #### Debian/Ubuntu
 ```
