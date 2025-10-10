@@ -94,7 +94,7 @@ For more details, see [AWS CLI configuration documentation](https://docs.aws.ama
     aws sso login
     ```
 
-    > **__NOTE:__** Makefile commands use the configured default AWS profile. Ensure that your environment variables or ~/.aws/config file are set to your target AWS Account. See [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) for more info.
+    > **__NOTE:__** [Makefile](/Makefile) commands use the configured default AWS profile. Ensure that your environment variables or ~/.aws/config file are set to your target AWS Account. See [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) for more info.
 
 2. Create Application Management Token SECRET. Get the value used in the following command from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys
     ```bash
