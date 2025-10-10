@@ -1,12 +1,12 @@
 # Typescript Smartcar Webhook Receiver
 
-
 ## Design
-This application is designed to receive Smartcar webhook events and process them asynchronously. 
+This application is designed to receive Smartcar webhook events and process them asynchronously.
 ![Design Diagram](docs/Design.png)
+
 The API Gateway receives incoming webhook events and forwards them the [Receiver](src/lambdas/api/index.ts) lambda.
 
-The **Reciever** lambda...
+The **Receiver** lambda...
 1. Validates the webhook URI by responding to the [initial verification challenge](https://smartcar.com/docs/integrations/webhooks/callback-verification)
 2. Validates the webhook event payload using the [Smartcar signature header](https://smartcar.com/docs/integrations/webhooks/payload-verification)
 3. Forwards valid webhook events to an SQS queue
@@ -20,22 +20,38 @@ The **Processor** lambda...
 2. Retries failed messages 3 times. Upon failure the message will go to the Dead Letter Queue
 3. Contains sample code that makes use of the Smartcar SDK. Remember to configure your Webhook to include the signals your code needs.
 
-## Seup
+## Setup
+
 ### Code
-1. NPM
 1. NodeJS v22
-1. Typescript
+2. Typescript
 3. NPM
+
 ### AWS
 1. [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-1. [CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/prerequisites.html)
-1. [CDK Bootstap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html)
+2. [CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/prerequisites.html)
+3. [CDK Bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html)
+
+### Tools
+1. GNU Make
+
+#### Debian/Ubuntu
+```bash
+sudo apt update
+sudo apt install -y build-essential
+```
+
+#### MacOS
+```bash
+xcode-select --install
+```
+
 ### AWS Account Profile/Auth
 
 To deploy and manage resources, you need to authenticate with AWS. There are two common methods:
 
 #### a. AWS SSO (Recommended)
-AWS Single Sign-On (SSO) allows you to securely log in and manage multiple AWS accounts.  
+AWS Single Sign-On (SSO) allows you to securely log in and manage multiple AWS accounts.
 - [Set up AWS SSO](https://docs.aws.amazon.com/singlesignon/latest/userguide/getting-started.html)
 - [Configure AWS CLI for SSO](https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile.html)
 
@@ -46,7 +62,7 @@ aws sso login
 This authenticates your CLI session using your SSO credentials.
 
 #### b. Environment Variables (Access Keys)
-You can also authenticate using AWS Access Key ID and Secret Access Key.  
+You can also authenticate using AWS Access Key ID and Secret Access Key.
 - [Configure AWS credentials using environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 
 Set the following environment variables:
@@ -69,51 +85,36 @@ output = json
 ```
 
 For more details, see [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
- 
-> **__NOTE:__** You must authenticate with a role that has sufficient permissions to assume CDK execution roles for deployment. Bootstrap processes for CDK will also require eleveated permissions. Learn more about permissions [here](https://aws.amazon.com/blogs/devops/secure-cdk-deployments-with-iam-permission-boundaries/)
-### Tools
-1. GNU Make
 
-#### Debian/Ubuntu
-```
-sudo apt update
-sudo apt install -y build-essential
-```
-
-#### MacOS
-```
-xcode-select --install
-```
-
-
-
+> **__NOTE:__** You must authenticate with a role that has sufficient permissions to assume CDK execution roles for deployment. Bootstrap processes for CDK will also require elevated permissions. Learn more about permissions [here](https://aws.amazon.com/blogs/devops/secure-cdk-deployments-with-iam-permission-boundaries/)
 
 ## Usage
 1. Login to AWS SSO
-    ```
+    ```bash
     aws sso login
     ```
 
     > **__NOTE:__** [Makefile](/Makefile) commands use the configured default AWS profile. Ensure that your environment variables or ~/.aws/config file are set to your target AWS Account. See [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) for more info.
 
-
-1. Create Application Management Token SECRET. Get the value used in the following command from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys
-    ```
+2. Create Application Management Token SECRET. Get the value used in the following command from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys
+    ```bash
     make create-secret appName=<your-app-name> amt=<your-application-management-token>
     ```
 
-1. Deploy
-    ```
+3. Deploy
+    ```bash
     make deploy appName=<your-app-name>
     ```
 
     > **__NOTE:__** Use the same `<your-app-name>` as used when creating the secret
-1. Copy the **ApiEndpointUrl** output from the successful command above and paste it in the [Smartcar Webhook Callback URI](https://dashboard.smartcar.com/)
-1. Subscribe vehicles to your webhook in the Smartcar Dashboard and see incoming events logged to CloudWatch log groups.
+
+4. Copy the **ApiEndpointUrl** output from the successful command above and paste it in the [Smartcar Webhook Callback URI](https://dashboard.smartcar.com/)
+
+5. Subscribe vehicles to your webhook in the Smartcar Dashboard and see incoming events logged to CloudWatch log groups.
 
 For more information on webhook setup, see [Smartcar's documentation](https://smartcar.com/docs/integrations/webhooks/overview).
 
 ## Removal
-```
+```bash
 make destroy appName=<your-app-name>
 ```
