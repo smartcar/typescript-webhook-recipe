@@ -114,6 +114,9 @@ For more details, see [AWS CLI configuration documentation](https://docs.aws.ama
 
 For more information on webhook setup, see [Smartcar's documentation](https://smartcar.com/docs/integrations/webhooks/overview).
 
+The default processer lambda is configured to check for the `tractionbattery-stateogcharge` signal. So, you should configure a webhook using the `tractionbattery-stateofcharge` signal for initial testing.
+![Signal Selection](docs/SignalScreenshot.png)
+
 ## Removal
 ```bash
 make destroy appName=<your-app-name>
