@@ -2,7 +2,7 @@
 ## Async Processing Pattern
 
 ## About
-This recipe uses an AWS API Gateway and AWS Lambda to receive verfication and data webhook calls. Events requiring further processing are sent to AWS SQS and handled by AWS Lambda asynchronously.
+This recipe uses an AWS API Gateway and AWS Lambda to receive verification and data webhook calls. Events requiring further processing are sent to AWS SQS and handled by AWS Lambda asynchronously.
 ![Design Diagram](docs/Design.png)
 
 ## Deploy
@@ -32,7 +32,7 @@ For more information on webhook setup, see [Smartcar's documentation](https://sm
 ## Implementation
 ![alt text](/docs/Flow.png)
 
-1. Verfication call is made from the Smartcar webhook.
+1. Verification call is made from the Smartcar webhook.
     
 2. The **Application Management Token** saved in AWS Secrets Manager is used to answer the verification challenge. The **@smartcar/webhooks** [SDK](https://github.com/smartcar/typescript-backend-sdks) is used in the [Receiver](src/lambdas/api/index.ts) lambda. 
     ```
@@ -42,11 +42,11 @@ For more information on webhook setup, see [Smartcar's documentation](https://sm
                 event.headers["SC-Signature"] || '',
             );
     ```
-    > **__NOTE:__** Only successfully verified webhook endpoints are eligible to receive data
+    > **__NOTE:__** Only successfully verified webhook endpoints are eligible to receive data.
 
 3. Data changes for configured signals will call your verified webhook endpoint with payloads containing selected data points in your **Integration**. 
 
-    > **__NOTE:__** After Smartcar requests verification, you should perform your own verification of the sender. Use the [SDK](https://github.com/smartcar/typescript-backend-sdks) . 
+    > **__NOTE:__** After Smartcar requests verification, you should perform your own verification of the sender. Use the [SDK](https://github.com/smartcar/typescript-backend-sdks). 
     ```
         const isValid = verifySignature(
                 applicationManagementToken || '',
