@@ -8,7 +8,7 @@ This recipe uses an AWS API Gateway and AWS Lambda to receive verification and d
 ## Deploy
 1. Follow [Prerequisites](#Prerequisites) instructions. Authorize with your target AWS Account.
 
-1. Create the **Application Management Token** SECRET. Get the value used in the following command from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys
+1. After creating an application, retrieve your **Application Management Token** from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys. Use that value in the following command.
     ```bash
     make create-secret appName=<your-app-name> amt=<your-application-management-token>
     ```
@@ -43,8 +43,8 @@ For more information on webhook setup, see [Smartcar's documentation](https://sm
             );
     ```
     > **__NOTE:__** Only successfully verified webhook endpoints are eligible to receive data.
-
-3. Data changes for configured signals will call your verified webhook endpoint with payloads containing selected data points in your **Integration**. 
+    
+3. Signal changes will trigger calls to your verified webhook endpoint with payloads containing selected data for your **Integration**. 
 
     > **__NOTE:__** After Smartcar requests verification, you should perform your own verification of the sender. Use the [SDK](https://github.com/smartcar/typescript-backend-sdks). 
     ```
