@@ -1,121 +1,144 @@
-# Typescript Smartcar Webhook Receiver
+# AWS Typescript Webhook Receiver 
+## Async Processing Pattern
 
-## Design
-This application is designed to receive Smartcar webhook events and process them asynchronously.
+## About
+This recipe uses an AWS API Gateway and AWS Lambda to receive verification and data webhook calls. Events requiring further processing are sent to AWS SQS and handled by AWS Lambda asynchronously.
 ![Design Diagram](docs/Design.png)
 
-The API Gateway receives incoming webhook events and forwards them the [Receiver](src/lambdas/api/index.ts) lambda.
+## Deploy
+1. Follow [Prerequisites](#Prerequisites) instructions. Authorize with your target AWS Account.
 
-The **Receiver** lambda...
-1. Validates the webhook URI by responding to the [initial verification challenge](https://smartcar.com/docs/integrations/webhooks/callback-verification)
-2. Validates the webhook event payload using the [Smartcar signature header](https://smartcar.com/docs/integrations/webhooks/payload-verification)
-3. Forwards valid webhook events to an SQS queue
-4. Returns a 200 OK response to Smartcar
-
-The SQS queue triggers the [Processor](src/lambdas/sqs/index.ts) Lambda function. This function can be customized to perform any processing required for **your** application.
-
-The **Processor** lambda...
-
-1. Works in batches of 10. Partial batch failure is supported allowing individual records in a batch to fail for retry.
-2. Retries failed messages 3 times. Upon failure the message will go to the Dead Letter Queue
-3. Contains sample code that makes use of the Smartcar SDK. Remember to configure your Webhook to include the signals your code needs.
-
-## Setup
-
-### Code
-1. NodeJS v22
-2. Typescript
-3. NPM
-
-### AWS
-1. [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-2. [CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/prerequisites.html)
-3. [CDK Bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html)
-
-### Tools
-1. GNU Make
-
-#### Debian/Ubuntu
-```bash
-sudo apt update
-sudo apt install -y build-essential
-```
-
-#### MacOS
-```bash
-xcode-select --install
-```
-
-### AWS Account Profile/Auth
-
-To deploy and manage resources, you need to authenticate with AWS. There are two common methods:
-
-#### a. AWS SSO (Recommended)
-AWS Single Sign-On (SSO) allows you to securely log in and manage multiple AWS accounts.
-- [Set up AWS SSO](https://docs.aws.amazon.com/singlesignon/latest/userguide/getting-started.html)
-- [Configure AWS CLI for SSO](https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile.html)
-
-After setup, run:
-```bash
-aws sso login
-```
-This authenticates your CLI session using your SSO credentials.
-
-#### b. Environment Variables (Access Keys)
-You can also authenticate using AWS Access Key ID and Secret Access Key.
-- [Configure AWS credentials using environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
-
-Set the following environment variables:
-```bash
-export AWS_ACCESS_KEY_ID=<your-access-key-id>
-export AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
-export AWS_DEFAULT_REGION=<your-region>
-```
-
-#### Setting the Default AWS Profile
-To set your target AWS account as the default profile, update `~/.aws/config`:
-```ini
-[default]
-sso_account_id=<your-target-account>
-sso_role_name=AdministratorAccess
-sso_start_url=<your-sso-start-url>
-sso_region=<your-region>
-region = <your-region>
-output = json
-```
-
-For more details, see [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
-
-> **__NOTE:__** You must authenticate with a role that has sufficient permissions to assume CDK execution roles for deployment. Bootstrap processes for CDK will also require elevated permissions. Learn more about permissions [here](https://aws.amazon.com/blogs/devops/secure-cdk-deployments-with-iam-permission-boundaries/)
-
-## Usage
-1. Login to AWS SSO
-    ```bash
-    aws sso login
-    ```
-
-    > **__NOTE:__** [Makefile](/Makefile) commands use the configured default AWS profile. Ensure that your environment variables or ~/.aws/config file are set to your target AWS Account. See [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) for more info.
-
-2. Create Application Management Token SECRET. Get the value used in the following command from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys
+1. After creating an application, retrieve your **Application Management Token** from the [Smartcar Dashboard](https://dashboard.smartcar.com/)-> Configuration-> API Keys. Use that value in the following command.
     ```bash
     make create-secret appName=<your-app-name> amt=<your-application-management-token>
     ```
 
-3. Deploy
+3. Deploy the stack
     ```bash
     make deploy appName=<your-app-name>
     ```
 
-    > **__NOTE:__** Use the same `<your-app-name>` as used when creating the secret
+    > **__IMPORTANT:__** Use the same `<your-app-name>` for both commands
 
-4. Copy the **ApiEndpointUrl** output from the successful command above and paste it in the [Smartcar Webhook Callback URI](https://dashboard.smartcar.com/)
+4. Copy the **ApiEndpointUrl** output from the successful **deploy** command above and paste it in the [Smartcar Webhook Callback URI](https://dashboard.smartcar.com/)
 
 5. Subscribe vehicles to your webhook in the Smartcar Dashboard and see incoming events logged to CloudWatch log groups.
 
 For more information on webhook setup, see [Smartcar's documentation](https://smartcar.com/docs/integrations/webhooks/overview).
 
-The default processer lambda is configured to check for the `tractionbattery-stateogcharge` signal. So, you should configure a webhook using the `tractionbattery-stateofcharge` signal for initial testing.
+> **__NOTE:__** The default processer lambda is configured to check for the `tractionbattery-stateogcharge` signal. So, you should configure a webhook using the `tractionbattery-stateofcharge` signal for initial testing.
 ![Signal Selection](docs/SignalScreenshot.png)
+
+## Implementation
+![alt text](/docs/Flow.png)
+
+1. Verification call is made from the Smartcar webhook.
+    
+2. The **Application Management Token** saved in AWS Secrets Manager is used to answer the verification challenge. The **@smartcar/webhooks** [SDK](https://github.com/smartcar/typescript-backend-sdks) is used in the [Receiver](src/lambdas/api/index.ts) lambda. 
+    ```
+    const isValid = verifySignature(
+                applicationManagementToken || '',
+                JSON.stringify(eventPayload),
+                event.headers["SC-Signature"] || '',
+            );
+    ```
+    > **__NOTE:__** Only successfully verified webhook endpoints are eligible to receive data.
+
+3. Signal changes will trigger calls to your verified webhook endpoint with payloads containing selected data for your **Integration**. 
+
+    > **__NOTE:__** After Smartcar requests verification, you should perform your own verification of the sender. Use the [SDK](https://github.com/smartcar/typescript-backend-sdks). 
+    ```
+        const isValid = verifySignature(
+                applicationManagementToken || '',
+                JSON.stringify(eventPayload),
+                event.headers["SC-Signature"] || '',
+            );
+    ```
+
+4. The [Receiver](src/lambdas/api/index.ts) lambda will send a command to AWS SQS for processing and retry. This endpoint must return a success quickly, so avoid complex or high latency logic in the Receiver.
+
+    ```
+        const params = {
+            QueueUrl: process.env.QUEUE_URL!,
+            MessageBody: event.body
+        }
+        const command = new SendMessageCommand(params);
+        const response = await sqsClient.send(command);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                message: 'Webhook received successfully',
+            }),
+        };
+    ```
+
+5. The [Processor](src/lambdas/sqs/index.ts) lambda will handle the queued commands. Failures here are set to automatically retry 3 times before being sent to the DLQ ([see implementation](/lib/webhook-receiver-stack.ts#L32)).
+
+> **__NOTE:__** Settings like Log Level, Lambda timeout in seconds, memory settings, and number of retries are found [here](/lib/webhook-receiver-stack.ts)
+
+## Logs and Monitoring
+This recipe writes to the [Powertools](https://docs.aws.amazon.com/powertools/typescript/latest/) logger. Logs will be found in the Cloudwatch LogGroup associated with the Lambda. 
+
+Monitors can be created using out-of-the-box metrics available on [SQS](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html), [Lambda](https://docs.aws.amazon.com/lambda/latest/dg/monitoring-metrics-types.html), and [API gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-metrics-and-dimensions.html).
+
+## Prerequisites
+
+Before deploying this webhook receiver, ensure you have the following installed and configured:
+
+### Required Software
+- **Node.js v22** - [Download here](https://nodejs.org/)
+- **AWS CLI** - [Installation guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- **AWS CDK CLI** - Install with `npm install -g aws-cdk`
+- **GNU Make** - Usually pre-installed on macOS/Linux
+
+**macOS users:** Install Xcode command line tools if Make is missing:
+```bash
+xcode-select --install
+```
+
+**Ubuntu/Debian users:** Install build tools if Make is missing:
+```bash
+sudo apt update && sudo apt install -y build-essential
+```
+
+### AWS Setup
+
+1. [**Bootstrap CDK**](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html) (one-time setup per AWS account/region)
+
+2. **Configure Authentication** - Choose one method:
+
+   **Option A: [AWS SSO](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (Recommended)**
+   ```bash
+   # Configure SSO profile
+   aws configure sso
+   # Login when needed
+   aws sso login
+   ```
+    Set your target AWS account as the **default** profile. Update `~/.aws/config`:
+    ```ini
+    [default]
+    sso_account_id=<your-target-account>
+    sso_role_name=AdministratorAccess
+    sso_start_url=<your-sso-start-url>
+    sso_region=<your-region>
+    region = <your-region>
+    output = json
+    ```
+   **Option B: [Access Keys](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html)**
+   ```bash
+   export AWS_ACCESS_KEY_ID=<your-access-key>
+   export AWS_SECRET_ACCESS_KEY=<your-secret-key>
+   export AWS_DEFAULT_REGION=<your-region>
+   ```
+
+3. **Verify Setup**:
+   ```bash
+   aws sts get-caller-identity
+   ```
+
+> **⚠️ Important:** You must use a role that has sufficient permissions to assume CDK execution roles for deployment. Bootstrap processes for CDK will also require elevated permissions. Learn more about permissions [here](https://aws.amazon.com/blogs/devops/secure-cdk-deployments-with-iam-permission-boundaries/)
+
+
 
 ## Removal
 ```bash
