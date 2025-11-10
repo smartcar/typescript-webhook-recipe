@@ -20,7 +20,7 @@ This recipe uses an AWS API Gateway and AWS Lambda to receive verification and d
 
     > **__IMPORTANT:__** Use the same `<your-app-name>` for both commands
 
-4. Copy the **ApiEndpointUrl** OUTPUT from the successful **deploy** command above and paste it in the [Smartcar Webhook Callback URI](https://dashboard.smartcar.com/)
+4. Copy the **ApiEndpointUrl** output from the successful **deploy** command above and paste it in the [Smartcar Webhook Callback URI](https://dashboard.smartcar.com/)
 
 5. Subscribe vehicles to your webhook in the Smartcar Dashboard and see incoming events logged to CloudWatch log groups.
 
