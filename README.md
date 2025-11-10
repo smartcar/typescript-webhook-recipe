@@ -43,7 +43,7 @@ For more information on webhook setup, see [Smartcar's documentation](https://sm
             );
     ```
     > **__NOTE:__** Only successfully verified webhook endpoints are eligible to receive data.
-    
+
 3. Signal changes will trigger calls to your verified webhook endpoint with payloads containing selected data for your **Integration**. 
 
     > **__NOTE:__** After Smartcar requests verification, you should perform your own verification of the sender. Use the [SDK](https://github.com/smartcar/typescript-backend-sdks). 
@@ -74,7 +74,12 @@ For more information on webhook setup, see [Smartcar's documentation](https://sm
 
 5. The [Processor](src/lambdas/sqs/index.ts) lambda will handle the queued commands. Failures here are set to automatically retry 3 times before being sent to the DLQ ([see implementation](/lib/webhook-receiver-stack.ts#L32)).
 
-> **__NOTE:__** Infrastructure settings like Log Level and Lambda timeouts are defined [here](/lib/webhook-receiver-stack.ts)
+> **__NOTE:__** Settings like Log Level, Lambda timeout in seconds, memory settings, and number of retries are found [here](/lib/webhook-receiver-stack.ts)
+
+## Logs and Monitoring
+This recipe writes to the [Powertools](https://docs.aws.amazon.com/powertools/typescript/latest/) logger. Logs will be found in the Cloudwatch LogGroup associated with the Lambda. 
+
+Monitors can be created using out-of-the-box metrics available on [SQS](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html), [Lambda](https://docs.aws.amazon.com/lambda/latest/dg/monitoring-metrics-types.html), and [API gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-metrics-and-dimensions.html).
 
 ## Prerequisites
 
