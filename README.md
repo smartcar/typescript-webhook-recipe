@@ -34,25 +34,26 @@ For more information on webhook setup, see [Smartcar's documentation](https://sm
 
 1. Verification call is made from the Smartcar webhook.
     
-2. The **Application Management Token** saved in AWS Secrets Manager is used to answer the verification challenge. The **@smartcar/webhooks** [SDK](https://github.com/smartcar/typescript-backend-sdks) is used in the [Receiver](src/lambdas/api/index.ts) lambda. 
+2. The **Application Management Token** saved in AWS Secrets Manager is used to answer the verification challenge. `VERIFY` requests are signed with `SC-Signature` just like events, so the [Receiver](src/lambdas/api/index.ts) lambda verifies that signature before answering the challenge, rejecting anything unsigned or wrong.
     ```
-    const isValid = verifySignature(
-                applicationManagementToken || '',
-                JSON.stringify(eventPayload),
-                event.headers["SC-Signature"] || '',
-            );
+    // The VERIFY request itself must be from Smartcar
+    if (!isValidSignature(applicationManagementToken, event.body, getHeader(event.headers, 'SC-Signature'))) {
+        return { statusCode: 401, body: JSON.stringify({ message: 'invalid signature' }) };
+    }
+    const hmac = hashChallenge(applicationManagementToken, challenge);
     ```
+    > **__WARNING:__** The challenge response uses the same HMAC as the `SC-Signature` header on events. If a receiver hashes any challenge from any caller, an attacker can get a valid signature for a forged event. Verifying the `SC-Signature` on the `VERIFY` request before hashing the challenge prevents this.
     > **__NOTE:__** Only successfully verified webhook endpoints are eligible to receive data.
 
 3. Signal changes will trigger calls to your verified webhook endpoint with payloads containing selected data for your **Integration**. 
 
-    > **__NOTE:__** After Smartcar requests verification, you should perform your own verification of the sender. Use the [SDK](https://github.com/smartcar/typescript-backend-sdks). 
+    > **__NOTE:__** Verify every event before processing it. The Receiver checks the `SC-Signature` header against the **raw** request body, using a constant-time comparison. Never verify against re-serialized JSON.
     ```
-        const isValid = verifySignature(
-                applicationManagementToken || '',
-                JSON.stringify(eventPayload),
-                event.headers["SC-Signature"] || '',
-            );
+    const isValid = isValidSignature(
+        applicationManagementToken,
+        event.body,
+        getHeader(event.headers, 'SC-Signature'),
+    );
     ```
 
 4. The [Receiver](src/lambdas/api/index.ts) lambda will send a command to AWS SQS for processing and retry. This endpoint must return a success quickly, so avoid complex or high latency logic in the Receiver.
